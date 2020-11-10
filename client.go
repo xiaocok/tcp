@@ -28,9 +28,16 @@ type Client struct {
 	running      bool
 	connected    bool
 	wg           sync.WaitGroup
+	connectLock  sync.Mutex
 }
 
 func (c *Client) connectServer(address string) error {
+	c.connectLock.Lock()
+	defer c.connectLock.Unlock()
+
+	if c.connected {
+		return nil
+	}
 	c.remoteAddr = NewAddr(address)
 
 	tcpAddr, err := net.ResolveTCPAddr("tcp", address)
@@ -66,6 +73,14 @@ func (c *Client) OnRecv(handle ClientRecvHandle) {
 	c.onRecv = handle
 }
 
+func (c *Client) callOnRecv(recv *Message) {
+	go func() {
+		if c.onRecv != nil {
+			c.onRecv(recv)
+		}
+	}()
+}
+
 /*
 func (c *Client) heartbeat() {
 	ticker := time.NewTicker(time.Second * 5)
@@ -95,9 +110,7 @@ func (c *Client) reconnect() {
 	for ; c.running; {
 		time.Sleep(time.Second * 3)
 
-		if c.connected == false {
-			c.connectServer(c.remoteAddr.GetAddress())
-		}
+		c.connectServer(c.remoteAddr.GetAddress())
 	}
 }
 
@@ -139,9 +152,7 @@ func (c *Client) recv() {
 			continue
 		}
 
-		if c.onRecv != nil {
-			c.onRecv(&msg)
-		}
+		c.callOnRecv(&msg)
 	}
 }
 

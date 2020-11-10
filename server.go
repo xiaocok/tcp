@@ -48,6 +48,19 @@ func (s *Server) OnRecv(handle ServerRecvHandle) {
 }
 
 /**
+ * call OnRecv callback function
+ * @param *Addr addr:	client addr
+ * @param *Message req:	request message
+ */
+func (s *Server) callOnRecv(addr *Addr, req *Message) {
+	go func() {
+		if s.onRecv != nil {
+			s.onRecv(addr, req)
+		}
+	}()
+}
+
+/**
  * send a message to tcp client
  * @param Addr addr:	the client address struct
  * @param *Message msg:	the message sent to client
@@ -56,7 +69,9 @@ func (s *Server) Send(addr Addr, msg *Message) error {
 	if connect, ok := s.connCtl[addr]; !ok {
 		return fmt.Errorf("the address[%s] of connect is not exist.", addr.GetAddress())
 	} else {
-		connect.sendCh <- msg
+		go func() {
+			connect.sendCh <- msg
+		}()
 	}
 	return nil
 }
@@ -70,11 +85,36 @@ func (s *Server) OnConnect(handle ConnectHandle) {
 }
 
 /**
+ * call OnConnect callback function
+ * @param *net.TCPConn conn:the client connect
+ * @param *Addr addr:		client addr
+ */
+func (s *Server) callOnConnect(conn *net.TCPConn, addr *Addr) {
+	go func() {
+		if s.onConnect != nil {
+			s.onConnect(conn, addr)
+		}
+	}()
+}
+
+/**
  * register callback function when a client disconnect
  * @param DisconnectHandle handle:	callback function
  */
 func (s *Server) OnDisconnect(handle DisconnectHandle) {
 	s.onDisconnect = handle
+}
+
+/**
+ * call OnDisconnect callback function
+ * @param *Addr addr:		client addr
+ */
+func (s *Server) callOnDisconnect(addr *Addr) {
+	go func() {
+		if s.onDisconnect != nil {
+			s.onDisconnect(addr)
+		}
+	}()
 }
 
 func (s *Server) Close() {
@@ -95,9 +135,7 @@ func (s *Server) Close() {
 }
 
 func (s *Server) closeConnect(addr *Addr) {
-	if s.onDisconnect != nil {
-		s.onDisconnect(addr)
-	}
+	s.callOnDisconnect(addr)
 
 	if connect, ok := s.connCtl[*addr]; ok {
 		connect.Close()
@@ -142,12 +180,13 @@ func (s *Server) Run(addr string) {
 		connect := NewConnect(s, conn, addr)
 
 		// save client connect
+		if s.connCtl == nil {
+			s.connCtl = make(map[Addr]*Connect)
+		}
 		s.connCtl[*addr] = connect
 
 		// trigger user registered connect event
-		if s.onConnect != nil {
-			s.onConnect(conn, addr)
-		}
+		s.callOnConnect(conn, addr)
 
 		// use connect for send data, handle request,  receive data
 		connect.worker()

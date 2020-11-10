@@ -11,7 +11,7 @@ import (
 func main() {
 	// Receive system interrupt signal
 	stopCh := make(chan os.Signal)
-	signal.Notify(stopCh, os.Interrupt)
+	signal.Notify(stopCh, os.Interrupt, os.Kill)
 
 	// new tcp server
 	server := tcp.NewServer()

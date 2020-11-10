@@ -12,7 +12,7 @@ func main() {
 
 	// Receive system interrupt signal
 	stopCh := make(chan os.Signal)
-	signal.Notify(stopCh, os.Interrupt)
+	signal.Notify(stopCh, os.Interrupt, os.Kill)
 
 	// interrupt server
 	go func() {
