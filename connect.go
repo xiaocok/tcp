@@ -1,12 +1,22 @@
+/**
+ * Copyright gitteamer 2020
+ * @date: 2020/11/10
+ * @note: server connect manager
+ */
 package tcp
 
 import (
 	"github.com/gitteamer/log"
+	"io"
 	"net"
 	"sync"
 	"time"
 )
 
+/**
+ * author gitteamer 2020/11/10
+ * new server connect obj
+ */
 func NewConnect(server *Server, conn *net.TCPConn, addr *Addr) *Connect {
 	c := new(Connect)
 	c.server = server
@@ -19,6 +29,7 @@ func NewConnect(server *Server, conn *net.TCPConn, addr *Addr) *Connect {
 }
 
 /**
+ * author gitteamer 2020/11/10
  * client connect info, receive chan, send chan
  */
 type Connect struct {
@@ -34,6 +45,7 @@ type Connect struct {
 }
 
 /**
+ * author gitteamer 2020/11/10
  * receive, handle, send in goroutine
  */
 func (c *Connect) worker() {
@@ -43,6 +55,7 @@ func (c *Connect) worker() {
 }
 
 /**
+ * author gitteamer 2020/11/10
  * receive data form client
  */
 func (c *Connect) recv() {
@@ -57,7 +70,7 @@ func (c *Connect) recv() {
 		err := read(c.conn, &msg)
 		if err != nil {
 			switch err {
-			case errRecvEOF, errRemoteForceDisconnect:
+			case io.EOF/*errRecvEOF, errRemoteForceDisconnect*/:
 				log.Error("this client connect is close: %s.", err.Error())
 				c.server.closeConnect(c.addr)
 				c.Close()
@@ -69,15 +82,17 @@ func (c *Connect) recv() {
 			continue
 		}
 
-		/*if msg.Type == heartbeat {
+		// skip heart beat package
+		if msg.Type == heartbeat {
 			continue
-		}*/
+		}
 
 		c.recvCh <- &msg
 	}
 }
 
 /**
+ * author gitteamer 2020/11/10
  * handle a request.
  * receive data, handle request data, then send response data to client
  */
@@ -96,6 +111,7 @@ func (c *Connect) handle() {
 }
 
 /**
+ * author gitteamer 2020/11/10
  * send data to client
  */
 func (c *Connect) send() {
@@ -124,6 +140,10 @@ func (c *Connect) send() {
 	}
 }
 
+/**
+ * author gitteamer 2020/11/10
+ * close connect
+ */
 func (c *Connect) Close() {
 	c.lock.Lock()
 	c.lock.Unlock()

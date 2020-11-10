@@ -1,9 +1,13 @@
+/**
+ * Copyright gitteamer 2020
+ * @date: 2020/11/10
+ * @note: error
+ */
 package tcp
 
 import (
 	"errors"
 	"fmt"
-	"io"
 )
 
 /**
@@ -33,7 +37,11 @@ func panicToError(fn func()) (err error) {
 	return
 }
 
-func tcpErrorCheck(err error) error {
+/**
+ * author gitteamer 2020/11/10
+ * check io.EOF error
+ */
+/*func tcpErrorCheck(err error) error {
 	if err == nil {
 		return nil
 	}
@@ -43,19 +51,5 @@ func tcpErrorCheck(err error) error {
 		return errRecvEOF
 	}
 
-	/*if runtime.GOOS == "windows" {
-		// client disconnect. If panicErr is nil, then err is errDisconnect, otherwise err is original error.
-		panicErr := panicToError(func() {
-			if errno, ok := err.(*net.OpError).Err.(*os.SyscallError).Err.(syscall.Errno); ok && syscall.Errno(errno) == syscall.WSAECONNRESET {
-				err = errRemoteForceDisconnect
-			}
-		})
-		// record the panicErr
-		if panicErr != nil {
-			log.Error(panicErr.Error())
-		}
-		return err
-	}*/
-
 	return err
-}
+}*/

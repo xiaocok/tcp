@@ -1,15 +1,30 @@
+/**
+ * Copyright gitteamer 2020
+ * @date: 2020/11/10
+ * @note: tcp client
+ */
+
 package tcp
 
 import (
 	"fmt"
 	"github.com/gitteamer/log"
+	"io"
 	"net"
 	"sync"
 	"time"
 )
 
+/**
+ * author gitteamer 2020/11/10
+ * receive event callback function
+ */
 type ClientRecvHandle = func(recv *Message)
 
+/**
+ * author gitteamer 2020/11/10
+ * new client by address, ip:port
+ */
 func NewClient(address string) *Client {
 	client := new(Client)
 	client.connectServer(address)
@@ -19,18 +34,27 @@ func NewClient(address string) *Client {
 	return client
 }
 
+/**
+ * author gitteamer 2020/11/10
+ * tcp client struct
+ */
 type Client struct {
 	remoteAddr   *Addr            // remote address
 	localAddr    *Addr            // local address
 	conn         net.Conn         // connect server obj, receive chan, send chan
 	onRecv       ClientRecvHandle // receive event callback function
 	onDisconnect DisconnectHandle // disconnect event callback function
-	running      bool
-	connected    bool
-	wg           sync.WaitGroup
-	connectLock  sync.Mutex
+	running      bool             // is running flag
+	connected    bool             // is connect flag
+	wg           sync.WaitGroup   // wait event obj, use save exit
+	connectLock  sync.Mutex       // connect lock, Avoid concurrent connections
 }
 
+/**
+ * author gitteamer 2020/11/10
+ * connect server. if not connected, will Reconnect Every 3 seconds.
+ * @param string address：	server addr
+ */
 func (c *Client) connectServer(address string) error {
 	c.connectLock.Lock()
 	defer c.connectLock.Unlock()
@@ -70,10 +94,20 @@ func (c *Client) connectServer(address string) error {
 	return nil
 }
 
+/**
+ * author gitteamer 2020/11/10
+ * register receive event callback function
+ * @param ClientRecvHandle handle:	callback function
+ */
 func (c *Client) OnRecv(handle ClientRecvHandle) {
 	c.onRecv = handle
 }
 
+/**
+ * author gitteamer 2020/11/10
+ * call receive event function
+ * @param *Message recv:	the receive data package
+ */
 func (c *Client) callOnRecv(recv *Message) {
 	go func() {
 		if c.onRecv != nil {
@@ -102,6 +136,7 @@ func (c *Client) heartbeat() {
 */
 
 /**
+ * author gitteamer 2020/11/10
  * Reconnecting the server every 3 seconds When is disconnected.
  */
 func (c *Client) reconnect() {
@@ -123,6 +158,11 @@ func (c *Client) reconnect() {
 	}
 }
 
+/**
+ * author gitteamer 2020/11/10
+ * send data to server
+ * @param *Message msg:		send message data
+ */
 func (c *Client) Send(msg *Message) error {
 	if c.conn != nil {
 		// pack data
@@ -144,6 +184,10 @@ func (c *Client) Send(msg *Message) error {
 	return nil
 }
 
+/**
+ * author gitteamer 2020/11/10
+ * read data until not running or disconnect
+ */
 func (c *Client) recv() {
 	c.wg.Add(1)
 	defer c.wg.Done()
@@ -153,7 +197,7 @@ func (c *Client) recv() {
 		//c.conn.SetReadDeadline(time.Now().Add(readTimeout))
 		if err := read(c.conn, &msg); err != nil {
 			switch err {
-			case errRecvEOF, errRemoteForceDisconnect:
+			case io.EOF/*errRecvEOF, errRemoteForceDisconnect*/:
 				log.Error("this client connect disconnect: %s.", err.Error())
 				c.connected = false
 				break
@@ -167,6 +211,10 @@ func (c *Client) recv() {
 	}
 }
 
+/**
+ * author gitteamer 2020/11/10
+ * close connect
+ */
 func (c *Client) Close() {
 	c.running = false
 	if c.conn != nil { // fix: connect fail, then c.conn is nil.

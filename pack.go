@@ -1,3 +1,9 @@
+/**
+ * Copyright gitteamer 2020
+ * @date: 2020/11/10
+ * @note: pack/unpack data, encode/decode data
+ */
+
 package tcp
 
 import (
@@ -9,6 +15,7 @@ import (
 )
 
 /**
+ * author gitteamer 2020/11/10
  * gob encode
  * @param *Message msg:		a struct pointer for encode
  * @return *bytes.Buffer:	a bytes buffer by encode, could get bytes by use buffer.Bytes()
@@ -31,6 +38,7 @@ func encode(msg *Message) (*bytes.Buffer, error) {
 }
 
 /**
+ * author gitteamer 2020/11/10
  * gob decode
  * @param []byte data:	the bytes data for decode
  * @param *Message msg:	the receive obj struct pointer for decode
@@ -51,6 +59,7 @@ func decode(data []byte, msg *Message) error {
 }
 
 /**
+ * author gitteamer 2020/11/10
  * pack message pointer send to client
  * @param interface{} msg:	message pointer for send
  * @return *bytes.Buffer:	the data buffer obj by pack
@@ -77,6 +86,7 @@ func pack(msg *Message) (*bytes.Buffer, error) {
 }
 
 /**
+ * author gitteamer 2020/11/10
  * read data form connect
  * @param io.Reader r:	the io.Reader interface obj for read data
  * @param *Message mes:	the message struct pointer for receive the decode data
@@ -86,7 +96,7 @@ func read(r io.Reader, msg *Message) error {
 	var length int64
 	err := binary.Read(r, binary.BigEndian, &length)
 	// check tcp error
-	if err = tcpErrorCheck(err); err != nil {
+	if /*err = tcpErrorCheck(err);*/err != nil {
 		return err
 	}
 
