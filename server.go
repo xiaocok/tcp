@@ -9,7 +9,7 @@ import (
 
 func init() {
 	// init log
-	log.SetLogger("tcp", log.Console, log.LevelError)
+	log.SetLogger("tcp", log.Console, log.LevelInfo)
 }
 
 /**

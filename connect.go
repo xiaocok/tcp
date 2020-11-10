@@ -53,6 +53,7 @@ func (c *Connect) recv() {
 		time.Sleep(time.Second)
 		msg := Message{}
 
+		//c.conn.SetReadDeadline(time.Now().Add(readTimeout))
 		err := read(c.conn, &msg)
 		if err != nil {
 			switch err {
@@ -110,6 +111,7 @@ func (c *Connect) send() {
 				continue
 			}
 
+			//c.conn.SetWriteDeadline(time.Now().Add(writeTimeout))
 			_, err = c.conn.Write(data.Bytes())
 			if err != nil {
 				// broken pipe, use of closed network connection, or other write error
@@ -127,7 +129,7 @@ func (c *Connect) Close() {
 	c.lock.Unlock()
 	if c.running {
 		c.running = false
-		c.wg.Wait()
 		c.conn.Close()
+		c.wg.Wait()
 	}
 }

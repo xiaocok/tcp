@@ -63,6 +63,7 @@ func (c *Client) connectServer(address string) error {
 	c.connected = true
 	c.localAddr = NewAddr(conn.LocalAddr().String())
 
+	log.Info("connect server success, address=%s.", address)
 	go c.recv()
 	//go c.heartbeat()
 
@@ -112,6 +113,8 @@ func (c *Client) reconnect() {
 
 		c.connectServer(c.remoteAddr.GetAddress())
 	}
+
+	fmt.Println("reconnect")
 }
 
 func (c *Client) Send(msg *Message) error {
@@ -123,6 +126,7 @@ func (c *Client) Send(msg *Message) error {
 		}
 
 		// send data
+		//c.conn.SetWriteDeadline(time.Now().Add(writeTimeout))
 		_, err = c.conn.Write(buf.Bytes())
 		if err != nil {
 			// broken pipe, use of closed network connection, or other write error.
@@ -140,6 +144,7 @@ func (c *Client) recv() {
 
 	for ; c.running && c.connected; {
 		msg := Message{}
+		//c.conn.SetReadDeadline(time.Now().Add(readTimeout))
 		if err := read(c.conn, &msg); err != nil {
 			switch err {
 			case errRecvEOF, errRemoteForceDisconnect:
@@ -154,9 +159,12 @@ func (c *Client) recv() {
 
 		c.callOnRecv(&msg)
 	}
+
+	fmt.Println("recv")
 }
 
 func (c *Client) Close() {
 	c.running = false
+	c.conn.Close()
 	c.wg.Wait()
 }
