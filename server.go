@@ -121,6 +121,11 @@ func (s *Server) Close() {
 	s.lock.Lock()
 	defer s.lock.Lock()
 
+	// close listener
+	if s.listener != nil {
+		s.listener.Close()
+	}
+
 	// close all connect
 	var wg sync.WaitGroup
 	for addr, connect := range s.connCtl {
@@ -131,6 +136,7 @@ func (s *Server) Close() {
 			wg.Done()
 		}()
 	}
+
 	wg.Wait()
 }
 

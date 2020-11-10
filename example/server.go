@@ -9,19 +9,8 @@ import (
 )
 
 func main() {
-	// Receive system interrupt signal
-	stopCh := make(chan os.Signal)
-	signal.Notify(stopCh, os.Interrupt, os.Kill)
-
 	// new tcp server
 	server := tcp.NewServer()
-
-	// interrupt server
-	go func() {
-		<-stopCh
-		fmt.Println("receive interrupt command, now stopping...")
-		server.Close()
-	}()
 
 	server.OnConnect(func(conn *net.TCPConn, addr *tcp.Addr) {
 		fmt.Println(fmt.Sprintf("one client connect, remote address=%s.", conn.RemoteAddr().String()))
@@ -40,5 +29,14 @@ func main() {
 
 	})
 
-	server.Run(":8080")
+	go server.Run(":8080")
+
+	// Receive system interrupt signal
+	stopCh := make(chan os.Signal)
+	signal.Notify(stopCh, os.Interrupt, os.Kill)
+
+	// interrupt server
+	<-stopCh
+	fmt.Println("receive interrupt command, now stopping...")
+	server.Close()
 }

@@ -89,7 +89,7 @@ func (c *Connect) handle() {
 		select {
 		case msg := <-c.recvCh:
 			go func() {
-				c.server.callOnRecv(c.addr, msg)
+					c.server.callOnRecv(c.addr, msg)
 			}()
 		}
 	}

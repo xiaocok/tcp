@@ -42,13 +42,13 @@ func (c *Client) connectServer(address string) error {
 
 	tcpAddr, err := net.ResolveTCPAddr("tcp", address)
 	if err != nil {
-		log.Error("get address info error:%s.", err.Error())
+		//log.Error("get address info error:%s.", err.Error())
 		return fmt.Errorf("get address info error:%s.", err.Error())
 	}
 
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
 	if err != nil {
-		log.Error("connect server error:%s.", err.Error())
+		//log.Error("connect server error:%s.", err.Error())
 		return fmt.Errorf("connect server error:%s.", err.Error())
 	}
 
@@ -108,13 +108,19 @@ func (c *Client) reconnect() {
 	c.wg.Add(1)
 	defer c.wg.Done()
 
+	var currentConnectStatus error
 	for ; c.running; {
 		time.Sleep(time.Second * 3)
 
-		c.connectServer(c.remoteAddr.GetAddress())
+		err := c.connectServer(c.remoteAddr.GetAddress())
+		// filtering duplicate logs
+		if err != nil {
+			if currentConnectStatus == nil || err.Error() != currentConnectStatus.Error() {
+				currentConnectStatus = err
+				log.Error(err.Error())
+			}
+		}
 	}
-
-	fmt.Println("reconnect")
 }
 
 func (c *Client) Send(msg *Message) error {
@@ -159,12 +165,12 @@ func (c *Client) recv() {
 
 		c.callOnRecv(&msg)
 	}
-
-	fmt.Println("recv")
 }
 
 func (c *Client) Close() {
 	c.running = false
-	c.conn.Close()
+	if c.conn != nil { // fix: connect fail, then c.conn is nil.
+		c.conn.Close()
+	}
 	c.wg.Wait()
 }
