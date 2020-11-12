@@ -31,12 +31,14 @@ type DisconnectHandle = func(addr *Addr)
 func NewServer() *Server {
 	s := new(Server)
 	s.connMgr = make(map[Addr]*Connect)
+	s.running = true
 	return s
 }
 
 /**
  * author gitteamer 2020/11/10
- * tcp server
+ * tcp server.
+ * Please use NewServer() to create server obj.
  */
 type Server struct {
 	listener     *net.TCPListener  // the tcp server Listener
@@ -45,6 +47,7 @@ type Server struct {
 	onConnect    ConnectHandle     // connect event callback function
 	onDisconnect DisconnectHandle  // disconnect event callback function
 	lock         sync.RWMutex
+	running      bool
 }
 
 /**
@@ -140,6 +143,8 @@ func (s *Server) Close() {
 	s.lock.Lock()
 	defer s.lock.Lock()
 
+	s.running = false
+
 	// close listener
 	if s.listener != nil {
 		s.listener.Close()
@@ -197,7 +202,7 @@ func (s *Server) Run(addr string) {
 	s.listener = listener
 
 	// accept client
-	for {
+	for ; s.running; {
 		conn, err := s.listener.AcceptTCP()
 		if err != nil {
 			log.Error("tcp server accept one client error:%s", err.Error())

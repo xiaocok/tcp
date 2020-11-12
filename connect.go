@@ -31,6 +31,7 @@ func NewConnect(server *Server, conn *net.TCPConn, addr *Addr) *Connect {
 /**
  * author gitteamer 2020/11/10
  * client connect info, receive chan, send chan
+ * Please use NewConnect() to create connect obj.
  */
 type Connect struct {
 	name    string
