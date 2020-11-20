@@ -15,6 +15,16 @@ import (
 	"time"
 )
 
+var (
+	cliLog = log.NewLogger()
+)
+
+// init log, only Console
+func init() {
+	// init log
+	cliLog.SetLogger("tcp", log.Console, log.LevelInfo)
+}
+
 /**
  * author gitteamer 2020/11/10
  * receive event callback function
@@ -66,28 +76,26 @@ func (c *Client) connectServer(address string) error {
 
 	tcpAddr, err := net.ResolveTCPAddr("tcp", address)
 	if err != nil {
-		//log.Error("get address info error:%s.", err.Error())
 		return fmt.Errorf("get address info error:%s.", err.Error())
 	}
 
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
 	if err != nil {
-		//log.Error("connect server error:%s.", err.Error())
 		return fmt.Errorf("connect server error:%s.", err.Error())
 	}
 
 	if err = conn.SetKeepAlive(true); err != nil {
-		log.Error("set keep alive err: %s.", err.Error())
+		cliLog.Error("set keep alive err: %s.", err.Error())
 	}
 	if err = conn.SetKeepAlivePeriod(5 * time.Second); err != nil {
-		log.Error("set keep alive period err: %s.", err.Error())
+		cliLog.Error("set keep alive period err: %s.", err.Error())
 	}
 
 	c.conn = conn
 	c.connected = true
 	c.localAddr = NewAddr(conn.LocalAddr().String())
 
-	log.Info("connect server success, address=%s.", address)
+	cliLog.Info("connect server success, address=%s.", address)
 	go c.recv()
 	//go c.heartbeat()
 
@@ -152,7 +160,7 @@ func (c *Client) reconnect() {
 		if err != nil {
 			if currentConnectStatus == nil || err.Error() != currentConnectStatus.Error() {
 				currentConnectStatus = err
-				log.Error(err.Error())
+				cliLog.Error(err.Error())
 			}
 		}
 	}
@@ -198,11 +206,11 @@ func (c *Client) recv() {
 		if err := read(c.conn, &msg); err != nil {
 			switch err {
 			case io.EOF/*errRecvEOF, errRemoteForceDisconnect*/:
-				log.Error("this client connect disconnect: %s.", err.Error())
+				cliLog.Error("this client connect disconnect: %s.", err.Error())
 				c.connected = false
 				break
 			default:
-				log.Error("recv msg err: %s.", err.Error())
+				cliLog.Error("recv msg err: %s.", err.Error())
 			}
 			continue
 		}

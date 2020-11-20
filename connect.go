@@ -6,7 +6,6 @@
 package tcp
 
 import (
-	"github.com/gitteamer/log"
 	"io"
 	"net"
 	"sync"
@@ -70,13 +69,13 @@ func (c *Connect) recv() {
 		err := read(c.conn, &msg)
 		if err != nil {
 			switch err {
-			case io.EOF/*errRecvEOF, errRemoteForceDisconnect*/:
-				log.Error("this client connect is close: %s.", err.Error())
+			case io.EOF /*errRecvEOF, errRemoteForceDisconnect*/ :
+				svrLog.Error("this client connect is close: %s.", err.Error())
 				c.server.closeConnect(c.addr)
 				c.Close()
 				return
 			default:
-				log.Error("recv msg err: %s.", err.Error())
+				svrLog.Error("recv msg err: %s.", err.Error())
 			}
 
 			continue
@@ -104,7 +103,7 @@ func (c *Connect) handle() {
 		select {
 		case msg := <-c.recvCh:
 			go func() {
-					c.server.callOnRecv(c.addr, msg)
+				c.server.callOnRecv(c.addr, msg)
 			}()
 		}
 	}
@@ -123,7 +122,7 @@ func (c *Connect) send() {
 		case msg := <-c.sendCh:
 			data, err := pack(msg)
 			if err != nil {
-				log.Error("pack data address(%s) error:%s.", c.addr.GetAddress(), err.Error())
+				svrLog.Error("pack data address(%s) error:%s.", c.addr.GetAddress(), err.Error())
 				continue
 			}
 
@@ -131,7 +130,7 @@ func (c *Connect) send() {
 			_, err = c.conn.Write(data.Bytes())
 			if err != nil {
 				// broken pipe, use of closed network connection, or other write error
-				log.Error("send data to client address(%s) error:%s.", c.addr.GetAddress(), err.Error())
+				svrLog.Error("send data to client address(%s) error:%s.", c.addr.GetAddress(), err.Error())
 				c.server.closeConnect(c.addr)
 				c.Close()
 				return
