@@ -12,10 +12,14 @@ import (
 	"sync"
 )
 
+var (
+	svrLog = log.NewLogger()
+)
+
 // init log, only Console
 func init() {
 	// init log
-	log.SetLogger("tcp", log.Console, log.LevelInfo)
+	svrLog.SetLogger("tcp", log.Console, log.LevelInfo)
 }
 
 /**
@@ -187,14 +191,14 @@ func (s *Server) closeConnect(addr *Addr) {
 func (s *Server) Run(addr string) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
-		log.Error("the server listen address err:%s.", err.Error())
+		svrLog.Error("the server listen address err:%s.", err.Error())
 		return
 	}
 
 	// server listen
 	listener, err := net.ListenTCP("tcp", tcpAddr)
 	if err != nil {
-		log.Error("tcp server listen addr(%s) error:%s.", addr, err.Error())
+		svrLog.Error("tcp server listen addr(%s) error:%s.", addr, err.Error())
 		return
 	}
 
@@ -205,7 +209,7 @@ func (s *Server) Run(addr string) {
 	for ; s.running; {
 		conn, err := s.listener.AcceptTCP()
 		if err != nil {
-			log.Error("tcp server accept one client error:%s", err.Error())
+			svrLog.Error("tcp server accept one client error:%s", err.Error())
 			continue
 		}
 
