@@ -34,15 +34,15 @@ func NewConnect(server *Server, conn *net.TCPConn, addr *Addr) *Connect {
  * Please use NewConnect() to create connect obj.
  */
 type Connect struct {
-	name    string
-	server  *Server
-	addr    *Addr
-	conn    *net.TCPConn
-	recvCh  chan *Message
-	sendCh  chan *Message
-	running bool
-	wg      sync.WaitGroup
-	lock    sync.RWMutex
+	name      string
+	server    *Server
+	addr      *Addr
+	conn      *net.TCPConn
+	recvCh    chan *Message
+	sendCh    chan *Message
+	running   bool
+	wg        sync.WaitGroup
+	closeLock sync.Mutex
 }
 
 /**
@@ -71,7 +71,7 @@ func (c *Connect) recv() {
 		err := read(c.conn, &msg)
 		if err != nil {
 			switch err {
-			case io.EOF/*errRecvEOF, errRemoteForceDisconnect*/:
+			case io.EOF /*errRecvEOF, errRemoteForceDisconnect*/ :
 				log.Error("this client connect is close: %s.", err.Error())
 				c.server.closeConnect(c.addr)
 				c.Close()
@@ -105,7 +105,7 @@ func (c *Connect) handle() {
 		select {
 		case msg := <-c.recvCh:
 			go func() {
-					c.server.callOnRecv(c.addr, msg)
+				c.server.callOnRecv(c.addr, msg)
 			}()
 		}
 	}
@@ -146,11 +146,13 @@ func (c *Connect) send() {
  * close connect
  */
 func (c *Connect) Close() {
-	c.lock.Lock()
-	c.lock.Unlock()
+	c.closeLock.Lock()
+	defer c.closeLock.Unlock()
 	if c.running {
 		c.running = false
 		c.conn.Close()
 		c.wg.Wait()
+		close(c.recvCh)
+		close(c.sendCh)
 	}
 }
